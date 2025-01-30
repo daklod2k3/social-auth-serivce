@@ -1,20 +1,16 @@
 package auth
 
 import (
+	"auth/internal/global"
 	"errors"
-	gotrue "github.com/supabase-community/auth-go"
-	"github.com/supabase-community/auth-go/types"
+	"github.com/supabase-community/gotrue-go"
+	"github.com/supabase-community/gotrue-go/types"
+	"github.com/supabase-community/supabase-go"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	authEntity "shared/entity/auth"
-	"shared/global"
-
 	sharedEntity "shared/entity"
-)
-
-var (
-	logger = global.Logger
+	authEntity "shared/entity/auth"
 )
 
 type service struct {
@@ -27,15 +23,14 @@ func NewService() *service {
 
 	// init supabase supabase
 	s := &service{}
-	s.Service = sharedEntity.NewService()
+	s.Service = sharedEntity.NewService(global.Config.Database.ConnectString)
 
 	sp := global.Config.Supabase
-	client := gotrue.New(sp.Ref, sp.Key)
-	_, err := client.GetSettings()
+	client, err := supabase.NewClient(sp.Url, sp.Key, &supabase.ClientOptions{})
 	if err != nil {
 		panic("supabase supabase init failed" + err.Error())
 	}
-	s.goTrue = client
+	s.goTrue = client.Auth
 
 	//init user repo
 	s.user = sharedEntity.NewRepoRead(s.Service.Db.GetSchema())
@@ -65,15 +60,17 @@ func (s *service) GetSession(form *authEntity.SessionRequest) (*authEntity.AuthR
 			nil,
 			nil,
 		}
-		user *types.User
+		user *types.User = nil
 	)
 
-	logger.Info("Session: " + form.AccessToken + form.RefreshToken)
+	if &form.AccessToken == nil {
+		return nil, s.Error(errors.New("invalid access token"))
+	}
 
 	res, err := cl.GetUser()
 
 	if err != nil {
-		logger.Error(err.Error())
+		global.Logger.Error(err.Error())
 		if form.RefreshToken == "" {
 			return nil, s.Error(errors.New("invalid refresh token"))
 		}
@@ -94,7 +91,7 @@ func (s *service) GetSession(form *authEntity.SessionRequest) (*authEntity.AuthR
 		return nil, s.Error(errors.New("invalid token"))
 	}
 
-	response.User, _ = s.user.FindUser(&user.ID)
+	response.User, err = s.user.FindUser(response.UserId)
 	return &response, nil
 }
 
@@ -135,6 +132,6 @@ func (s *service) Register(form *authEntity.RegisterMail) (*authEntity.AuthRespo
 }
 
 func (s *service) Error(err error) error {
-	s.Service.Logger.Error(err.Error())
+	//global.Logger.Error(err.Error())
 	return status.Error(codes.Aborted, err.Error())
 }

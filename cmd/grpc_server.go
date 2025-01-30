@@ -5,6 +5,7 @@ import (
 	"auth/internal/global"
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"net"
 	authEntity "shared/entity/auth"
@@ -44,20 +45,15 @@ func (s server) GetSession(_ context.Context, req *pb.SessionReq) (*pb.AuthRespo
 	if err != nil {
 		return nil, err
 	}
-	var userPp pb.User
-	if session.User != nil {
-		userPp = pb.User{
-			Id:          session.User.ID.String(),
-			DisplayName: session.User.DisplayName,
-			AvatarPath:  session.User.AvatarPath,
-			UserId:      session.User.ID.String(),
-		}
-	}
+
+	var user []byte
+	user, err = bson.Marshal(session.User)
+
 	return &pb.AuthResponse{
 		AccessToken:  session.AccessToken,
 		RefreshToken: session.RefreshToken,
 		UserId:       session.UserId.String(),
-		User:         &userPp,
+		User:         user,
 	}, nil
 }
 

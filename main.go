@@ -3,7 +3,7 @@ package main
 import (
 	"auth/cmd"
 	"auth/internal/global"
-	global2 "shared/global"
+	"shared/initialize"
 	"sync"
 )
 
@@ -14,9 +14,9 @@ func main() {
 
 	global.InitGlobal()
 
-	global2.InitGlobal(&global2.Type{
+	initialize.InitGlobal(&initialize.Type{
 		Config: global.Config,
-		Logger: global2.Logger,
+		Logger: global.Logger,
 	})
 
 	go func() {

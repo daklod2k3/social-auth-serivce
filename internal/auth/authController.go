@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"auth/internal/utils"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"shared/entity/auth"
+	"shared/helper"
 	"shared/interfaces"
 )
 
@@ -100,7 +101,11 @@ func (ctl *Controller) GetSessionHandler(c *gin.Context) {
 	//
 	//var session authEntity.AuthResponse
 	//utils.Deserialize(sessionStr, &session)
-	session := authUtils.GetSessionFromContext(c)
+	session, err := helper.GetSessionFromContext(c)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unknown Error"})
+	}
 
 	c.JSON(200, session)
 

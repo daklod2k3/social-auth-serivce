@@ -1,18 +1,14 @@
 package profile
 
 import (
-	"auth/internal/utils"
+	"auth/internal/global"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"shared/database"
 	"shared/entity"
 	authEntity "shared/entity/auth"
-	"shared/global"
-)
-
-var (
-	logger = global.Logger
+	"shared/helper"
 )
 
 type controller struct {
@@ -22,7 +18,7 @@ type controller struct {
 
 func NewController() *controller {
 
-	db := database.New()
+	db := database.New(global.Config.Database.ConnectString)
 
 	return &controller{
 		profiles: entity.NewRepo(db.GetSchema()),
@@ -36,11 +32,14 @@ func (s *controller) CreateHdl(c *gin.Context) {
 		return
 	}
 
-	logger.Info(fmt.Sprintf("%+v", form))
+	global.Logger.Info(fmt.Sprintf("%+v", form))
 
-	session := authUtils.GetSessionFromContext(c)
+	session, err := helper.GetSessionFromContext(c)
+	if err != nil {
+		c.AbortWithStatusJSON(401, gin.H{"error": err.Error()})
+	}
 
-	createdUser, err := s.profiles.CreateUser(session.UserId, form.DisplayName, form.AvatarPath)
+	createdUser, err := s.profiles.CreateUser(session.UserId, &form.DisplayName, &form.AvatarPath)
 	if err != nil {
 		authEntity.ParseError(err, 400).WriteError(c)
 		return
@@ -49,8 +48,8 @@ func (s *controller) CreateHdl(c *gin.Context) {
 }
 
 func (s *controller) GetHdl(c *gin.Context) {
-	user := authUtils.GetUserFromContext(c)
-	if user == nil {
+	user, err := helper.GetUserFromContext(c)
+	if user == nil || err != nil {
 		c.AbortWithStatus(403)
 		c.JSON(-1, gin.H{
 			"message": "User not found",

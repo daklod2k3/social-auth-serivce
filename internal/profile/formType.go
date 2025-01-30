@@ -6,8 +6,8 @@ import (
 )
 
 type Post struct {
-	DisplayName *string `json:"display_name,required"`
-	AvatarPath  *string `json:"avatar_path,omitempty,string"`
+	DisplayName string `json:"display_name,required"`
+	AvatarPath  string `json:"avatar_path,omitempty,string"`
 }
 
 type SecureProfile struct {
