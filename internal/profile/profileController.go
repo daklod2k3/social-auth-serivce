@@ -9,10 +9,11 @@ import (
 	"shared/entity"
 	authEntity "shared/entity/auth"
 	"shared/helper"
+	"shared/interfaces"
 )
 
 type controller struct {
-	service  *profileService
+	service  *interfaces.ProfileService
 	profiles *entity.UserRepo
 }
 
@@ -50,8 +51,7 @@ func (s *controller) CreateHdl(c *gin.Context) {
 func (s *controller) GetHdl(c *gin.Context) {
 	user, err := helper.GetUserFromContext(c)
 	if user == nil || err != nil {
-		c.AbortWithStatus(403)
-		c.JSON(-1, gin.H{
+		c.JSON(403, gin.H{
 			"message": "User not found",
 		})
 		return

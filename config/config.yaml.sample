@@ -1,0 +1,13 @@
+port: 7001
+
+auth:
+  gpc:
+    port: 6001
+
+database:
+  connectString: mongodb://localhost:27017/
+
+supabase:
+  url: http://localhost:9999
+  key: abbabababa
+
